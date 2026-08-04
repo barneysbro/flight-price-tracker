@@ -97,7 +97,7 @@ async function main() {
   const origin = 'TPE';
   const destination = (destinationArg.startsWith('--') ? 'MAD' : destinationArg).toUpperCase();
   const airline = (airlineArg.startsWith('--') ? 'CZ' : airlineArg).toUpperCase().split('+').sort().join('+');
-  if (!fromArg || !toArg || !/^[A-Z]{3}$/.test(destination) || !/^[A-Z0-9]{2}(?:\+[A-Z0-9]{2})*$/.test(airline)) throw new Error('用法: node scan.mjs 2026-10-01 2026-12-31 8,9,10 MAD CA+ZH');
+  if (!fromArg || !toArg || !/^[A-Z]{3}$/.test(destination) || !/^[A-Z0-9]{2}(?:\+[A-Z0-9]{2})*$/.test(airline) || airline.split('+').includes('MU')) throw new Error('用法: node scan.mjs 2026-10-01 2026-12-31 8,9,10 MAD CA+ZH');
   const from = new Date(`${fromArg}T00:00:00Z`);
   const to = new Date(`${toArg}T00:00:00Z`);
   const durations = daysArg.split(',').map(Number).sort((a, b) => a - b);

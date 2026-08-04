@@ -28,7 +28,10 @@ async function data() {
   const latest = new Map([...parseCsv(results).filter(x => !x.status.startsWith('error:')), ...unavailable].filter(x => ['8', '9', '10'].includes(x.days)).sort((a, b) => a.checked_at.localeCompare(b.checked_at)).map(x => [`${x.airline},${x.origin},${x.destination},${x.departure},${x.return},${x.days}`, x]));
   return {
     generatedAt: new Date().toISOString(),
-    results: [...latest.values()].filter(x => x.status === 'ok').map(x => ({ ...x, days: Number(x.days), total_minutes: Number(x.total_minutes), total_twd: Number(x.total_twd), url: urlFor(x.departure, x.return, x.origin, x.destination, x.airline) })),
+    results: [...latest.values()].filter(x => x.status === 'ok' && x.carrier && !x.carrier.includes('中國東方航空') && x.airline.split('+').some(code => code !== 'MU')).map(x => {
+      const airline = x.airline.split('+').filter(code => code !== 'MU').join('+');
+      return { ...x, airline, days: Number(x.days), total_minutes: Number(x.total_minutes), total_twd: Number(x.total_twd), url: urlFor(x.departure, x.return, x.origin, x.destination, airline) };
+    }),
     noFlights: unavailable,
   };
 }
@@ -78,7 +81,7 @@ const server = createServer(async (request, response) => {
     try { input = JSON.parse(body || '{}'); }
     catch { return json(response, { error: 'JSON 格式錯誤' }, 400); }
     const { from, to, days, destination, airlines } = input;
-    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || from > to || !Array.isArray(days) || !days.length || days.some(x => !Number.isInteger(x) || x < 1 || x > 30) || !/^[A-Z]{3}$/.test(destination) || !Array.isArray(airlines) || !airlines.length || airlines.some(x => !/^[A-Z0-9]{2}$/.test(x))) {
+    if (!/^\d{4}-\d{2}-\d{2}$/.test(from) || !/^\d{4}-\d{2}-\d{2}$/.test(to) || from > to || !Array.isArray(days) || !days.length || days.some(x => !Number.isInteger(x) || x < 1 || x > 30) || !/^[A-Z]{3}$/.test(destination) || !Array.isArray(airlines) || !airlines.length || airlines.some(x => !/^[A-Z0-9]{2}$/.test(x)) || airlines.includes('MU')) {
       return json(response, { error: '搜尋條件無效' }, 400);
     }
     runScans({ from, to, days, destination, airlines });
