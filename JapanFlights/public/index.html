@@ -1,0 +1,88 @@
+<!doctype html>
+<html lang="zh-Hant">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>台北－日本直飛搜尋</title>
+  <style>
+    :root{font-family:Arial,"Noto Sans TC",sans-serif;color:#202124;background:#fff;--blue:#1a73e8;--light-blue:#e8f0fe;--border:#dadce0;--muted:#5f6368}*{box-sizing:border-box}body{margin:0}.appbar{height:64px;border-bottom:1px solid #e5e7eb;display:flex;align-items:center;padding:0 24px;gap:12px;background:#fff;position:sticky;top:0;z-index:5}.brand{font-size:21px;color:#3c4043}.plane{display:inline-grid;place-items:center;width:34px;height:34px;border-radius:50%;background:var(--light-blue);color:var(--blue);margin-right:8px}.app-meta{margin-left:auto;color:var(--muted);font-size:14px}main{max-width:1240px;margin:auto;padding:34px 22px 60px}.hero{text-align:center;padding:12px 0 24px}.hero h1{font-size:32px;font-weight:500;margin:0 0 8px}.muted{color:var(--muted);line-height:1.55}.panel,.card{background:#fff;border:1px solid var(--border);border-radius:16px}.panel{padding:20px;margin:18px 0}.search-panel{box-shadow:0 2px 8px #3c40431f}.section-title{font-size:18px;font-weight:500;margin:0 0 16px}.controls{display:flex;flex-wrap:wrap;gap:12px;align-items:end}label{display:grid;gap:7px;font-size:12px;color:var(--muted)}input,select,button{font:inherit;border:1px solid var(--border);border-radius:8px;padding:11px 12px;background:#fff;color:#202124;min-height:42px}input:hover,select:hover{border-color:#9aa0a6}input:focus,select:focus{outline:2px solid #d2e3fc;border-color:var(--blue)}button,.link{cursor:pointer;background:var(--blue);color:#fff;border:1px solid var(--blue);font-weight:500}.link{display:inline-block;padding:8px 13px;border-radius:18px;text-decoration:none;white-space:nowrap}button:hover,.link:hover{background:#1765cc;box-shadow:0 1px 3px #3c40434d}button:disabled{opacity:.5;cursor:wait}#save,#load{background:#fff;color:var(--blue)}#save:hover,#load:hover{background:#f6fafe}.filter-panel{background:#f8f9fa;border-color:#f1f3f4}.top{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;margin:14px 0 32px}.card{padding:20px;transition:.15s}.card:hover{box-shadow:0 2px 10px #3c404326;transform:translateY(-1px)}.rank{font-size:13px;font-weight:600;color:var(--blue)}.price{font-size:28px;font-weight:500;margin:10px 0}.route{font-weight:500;margin-bottom:8px}h2{font-size:20px;font-weight:500;margin:30px 0 12px}.table-wrap{padding:0;overflow:auto}.table-wrap table{min-width:1120px}table{width:100%;border-collapse:collapse;background:#fff}th,td{text-align:left;padding:14px 12px;border-bottom:1px solid #eceff1;vertical-align:middle}th{background:#f8f9fa;color:var(--muted);font-size:12px;font-weight:500;position:sticky;top:0}td{font-size:14px}tbody tr:hover{background:#f8faff}#status{white-space:pre-wrap;max-height:150px;overflow:auto;font:12px ui-monospace,monospace;color:var(--muted);margin:12px 0 0}.stats{margin-left:auto;color:var(--blue);align-self:center}.airline-field{border:0;padding:0;margin:0;min-width:360px}.airline-field legend{font-size:12px;color:var(--muted);margin-bottom:7px}.airline-choices{display:flex;flex-wrap:wrap;gap:8px}.airline-check{display:flex;align-items:center;gap:6px;border:1px solid var(--border);border-radius:18px;padding:7px 10px;color:#3c4043;background:#fff;cursor:pointer}.airline-check:has(input:checked){background:var(--light-blue);border-color:#8ab4f8;color:#174ea6}.airline-check input{min-height:auto;margin:0;padding:0;accent-color:var(--blue)}.storage-note{display:flex;gap:10px;align-items:flex-start;width:100%;background:#e8f0fe;color:#174ea6;border-radius:12px;padding:12px 15px;margin-top:14px;font-size:13px}@media(max-width:760px){.appbar{padding:0 16px}.app-meta{display:none}main{padding:24px 14px}.hero h1{font-size:26px}.top{grid-template-columns:1fr}.stats{width:100%;margin:0}.controls>*{flex:1 1 145px}.controls button{flex:0 1 auto}.times{display:none}}
+  </style>
+</head>
+<body>
+<header class="appbar"><div class="brand"><span class="plane">✈</span>航班探索</div><div class="app-meta">TPE 出發 · 2 位成人 · TWD</div></header>
+<main>
+  <section class="hero"><h1>尋找台北－日本直飛航班</h1><div class="muted">東京、大阪、福岡、札幌等熱門機場 · 2 位成人<br><span id="updatedAt"></span></div></section>
+
+  <section id="searchPanel" class="panel search-panel" hidden>
+    <div class="section-title">搜尋航班</div>
+    <form id="scan" class="controls">
+      <label>目的地<select name="destination" required></select></label>
+      <div class="muted">不限航空公司 · 僅直飛</div>
+      <label>出發日從<input name="from" type="date" value="2026-10-01" required></label>
+      <label>到<input name="to" type="date" value="2026-10-31" required></label>
+      <label>天數<input name="days" value="8,9,10" pattern="[0-9, ]+" required></label>
+      <button>執行搜尋</button>
+      <span id="scanState" class="muted"></span>
+    </form>
+    <pre id="status"></pre>
+  </section>
+
+  <section class="panel controls filter-panel" aria-label="篩選與排序">
+    <label>航空公司<select id="airline"><option value="">全部</option></select></label>
+    <label>目的地<select id="destination"><option value="">全部</option></select></label>
+    <label>天數<select id="days"><option value="">全部</option><option>8</option><option>9</option><option>10</option></select></label>
+    <label>最高總價<input id="max" type="number" min="0" step="1000" placeholder="不限"></label>
+    <label>出發日從<input id="from" type="date"></label>
+    <label>到<input id="to" type="date"></label>
+    <label>排序<select id="sort"><option value="price">價格：低到高</option><option value="priceDesc">價格：高到低</option><option value="date">出發日：早到晚</option><option value="dateDesc">出發日：晚到早</option><option value="days">天數：短到長</option></select></label>
+    <button id="save" type="button">儲存目前結果</button><button id="load" type="button">讀取結果</button><input id="file" type="file" accept="application/json,.json" hidden>
+    <strong id="count" class="stats"></strong>
+    <div class="storage-note">ⓘ 已強制直飛。Google Flights 沒有托運行李篩選；托運額度仍須在票價規則中驗證。價格每日更新。</div>
+  </section>
+
+  <h2>最便宜前三名</h2><section id="top" class="top"></section>
+  <h2>全部結果</h2>
+  <div class="panel table-wrap"><table>
+    <thead><tr><th>搜尋航空篩選</th><th>實際承運</th><th>航線</th><th>日期</th><th>天數</th><th>兩人總價</th><th class="times">去程</th><th>去程時長</th><th class="times">回程</th><th>回程時長</th><th>合計時長</th><th>Google Flights</th></tr></thead>
+    <tbody id="rows"></tbody>
+  </table></div>
+</main>
+<script>
+const names={HND:'東京羽田',NRT:'東京成田',KIX:'大阪關西',ITM:'大阪伊丹',FUK:'福岡',CTS:'北海道札幌新千歲',NGO:'名古屋中部',OKA:'沖繩那霸'};
+const airlines={ALL:'不限航空公司'};
+const destinationsByAirline={ALL:['HND','NRT','KIX','ITM','FUK','CTS','NGO','OKA']};
+const airlineLabel = codes => airlines[codes]||codes;
+const money = n => new Intl.NumberFormat('zh-TW',{style:'currency',currency:'TWD',maximumFractionDigits:0}).format(n);
+const short = d => `${d.slice(5).replace('-','/')}（${new Intl.DateTimeFormat('zh-TW',{weekday:'short',timeZone:'UTC'}).format(new Date(`${d}T00:00:00Z`))}）`;
+const duration = minutes => minutes ? `${Math.floor(minutes/60)} 小時 ${minutes%60 ? `${minutes%60} 分鐘` : ''}`.trim() : '—';
+const esc = value => String(value).replace(/[&<>"']/g, c => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+let all=[], shown=[], activeAirlines=[], pendingDestination='';
+
+function render(){
+  const days=document.querySelector('#days').value, max=Number(document.querySelector('#max').value)||Infinity;
+  const from=document.querySelector('#from').value, to=document.querySelector('#to').value, sort=document.querySelector('#sort').value;
+  const destination=document.querySelector('#destination').value,airline=document.querySelector('#airline').value;
+  shown=all.filter(x=>(!activeAirlines.length||activeAirlines.includes(x.airline))&&(!airline||x.airline===airline)&&(!destination||x.destination===destination)&&(!days||x.days==days)&&x.total_twd<=max&&(!from||x.departure>=from)&&(!to||x.departure<=to));
+  shown.sort((a,b)=>sort==='price'?a.total_twd-b.total_twd:sort==='priceDesc'?b.total_twd-a.total_twd:sort==='date'?a.departure.localeCompare(b.departure):sort==='dateDesc'?b.departure.localeCompare(a.departure):a.days-b.days);
+  document.querySelector('#count').textContent=`${shown.length} 筆`;
+  document.querySelector('#top').innerHTML=shown.slice().sort((a,b)=>a.total_twd-b.total_twd).slice(0,3).map((x,i)=>`<article class="card"><div class="rank">#${i+1} · ${esc(x.carrier||airlineLabel(x.airline))}</div><div class="price">${money(x.total_twd)}</div><div class="route">${short(x.departure)}–${short(x.return)} · ${x.days} 天</div><div class="muted">去 ${esc(x.outbound_time)}（${esc(x.outbound_duration||'—')}）<br>回 ${esc(x.return_time)}（${esc(x.return_duration||'—')}）<br>合計 ${duration(x.total_minutes)}</div></article>`).join('')||'<p class="muted">沒有符合條件的結果</p>';
+  document.querySelector('#rows').innerHTML=shown.map(x=>`<tr><td>${esc(airlineLabel(x.airline))}</td><td>${esc(x.carrier||'—')}</td><td>${esc(x.origin)} → ${esc(x.destination)}</td><td>${short(x.departure)}–${short(x.return)}</td><td>${x.days} 天</td><td><strong>${money(x.total_twd)}</strong></td><td class="times">${esc(x.outbound_time)}</td><td>${esc(x.outbound_duration||'—')}</td><td class="times">${esc(x.return_time)}</td><td>${esc(x.return_duration||'—')}</td><td><strong>${duration(x.total_minutes)}</strong></td><td><a class="link" href="${esc(x.url)}" target="_blank" rel="noopener noreferrer">開啟</a></td></tr>`).join('');
+}
+function updateSearchAirlines(){}
+function updateFilterDestinations(selected=''){const airline=document.querySelector('#airline').value,select=document.querySelector('#destination'),codes=[...new Set(all.filter(x=>!airline||x.airline===airline).map(x=>x.destination))].sort();select.innerHTML='<option value="">全部</option>'+codes.map(x=>`<option value="${esc(x)}">${esc(names[x]||x)}（${esc(x)}）</option>`).join('');select.value=codes.includes(selected)?selected:''}
+async function load(){const data=await fetch('./data/results.json',{cache:'no-store'}).then(r=>{if(!r.ok)throw Error(`HTTP ${r.status}`);return r.json()}),airline=document.querySelector('#airline'),daySelect=document.querySelector('#days'),selectedDays=daySelect.value,selectedDestination=pendingDestination||document.querySelector('#destination').value,selectedAirline=pendingDestination?'':airline.value;all=data.results;document.querySelector('#updatedAt').textContent=data.generatedAt?`價格更新：${new Intl.DateTimeFormat('zh-TW',{dateStyle:'medium',timeStyle:'short',timeZone:'Asia/Taipei'}).format(new Date(data.generatedAt))}`:'';const airlineCodes=activeAirlines.length?activeAirlines:[...new Set(all.map(x=>x.airline))];airline.innerHTML=`<option value="">${activeAirlines.length?'全部已選航空':'全部航空'}</option>`+airlineCodes.sort().map(x=>`<option value="${esc(x)}">${esc(airlineLabel(x))}（${esc(x)}）</option>`).join('');daySelect.innerHTML='<option value="">全部</option>'+[...new Set(all.map(x=>x.days))].sort((a,b)=>a-b).map(x=>`<option>${x}</option>`).join('');daySelect.value=[...daySelect.options].some(x=>x.value===selectedDays)?selectedDays:'';airline.value=selectedAirline;updateFilterDestinations(selectedDestination);pendingDestination='';render()}
+document.querySelector('#airline').addEventListener('input',()=>{updateFilterDestinations();render()});
+document.querySelectorAll('#destination,#days,#max,#from,#to,#sort').forEach(x=>x.addEventListener('input',render));
+const citySelect=document.querySelector('[name=destination]');citySelect.innerHTML=[...new Set(Object.values(destinationsByAirline).flat())].sort((a,b)=>names[a].localeCompare(names[b],'zh-Hant')).map(x=>`<option value="${x}">${names[x]}（${x}）</option>`).join('');citySelect.value='NRT';citySelect.addEventListener('change',updateSearchAirlines);updateSearchAirlines();
+document.querySelector('#save').addEventListener('click',()=>{const a=document.createElement('a');a.href=URL.createObjectURL(new Blob([JSON.stringify({savedAt:new Date().toISOString(),results:shown},null,2)],{type:'application/json'}));a.download=`flights-${new Date().toISOString().slice(0,10)}.json`;a.click();URL.revokeObjectURL(a.href)});
+document.querySelector('#load').addEventListener('click',()=>document.querySelector('#file').click());
+document.querySelector('#file').addEventListener('change',async event=>{try{const data=JSON.parse(await event.target.files[0].text()),rows=Array.isArray(data)?data:data.results;if(!Array.isArray(rows)||rows.some(x=>x.airline!=='ALL'||!/^\w{3}$/.test(x.origin)||!/^\w{3}$/.test(x.destination)||!/^\d{4}-\d{2}-\d{2}$/.test(x.departure)||!/^\d{4}-\d{2}-\d{2}$/.test(x.return)||!Number.isInteger(x.days)||!Number.isFinite(x.total_twd)||typeof x.outbound_time!=='string'||typeof x.return_time!=='string'||!x.url?.startsWith('https://www.google.com/travel/flights/')))throw Error();all=rows;render()}catch{alert('無法讀取：檔案格式不正確')}finally{event.target.value=''}});
+document.querySelector('#scan').addEventListener('submit',async event=>{
+  event.preventDefault();const form=new FormData(event.target),button=event.target.querySelector('button');
+  const days=form.get('days').split(',').map(x=>Number(x.trim())).filter(Boolean),destination=form.get('destination'),selectedAirlines=['ALL'];button.disabled=true;activeAirlines=selectedAirlines;pendingDestination=destination;
+  const response=await fetch('/api/scan',{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({from:form.get('from'),to:form.get('to'),days,destination,airlines:selectedAirlines})});
+  if(!response.ok){alert((await response.json()).error);button.disabled=false;return} poll();
+});
+async function poll(){const response=await fetch('/api/status').catch(()=>null);if(!response?.ok)return;document.querySelector('#searchPanel').hidden=false;const state=await response.json(),status=document.querySelector('#status');document.querySelector('#scanState').textContent=state.running?'搜尋中…':state.failed?'搜尋失敗':'已完成';status.hidden=!state.running&&!state.failed;status.textContent=state.log;if(state.running)setTimeout(poll,1500);else{document.querySelector('#scan button').disabled=false;load()}}
+load().catch(()=>document.querySelector('#updatedAt').textContent='目前無法載入價格資料');poll();
+</script></body></html>

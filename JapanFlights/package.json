@@ -1,0 +1,12 @@
+{
+  "type": "module",
+  "scripts": {
+    "start": "node app.mjs",
+    "scan": "node scan.mjs",
+    "export": "node app.mjs --export",
+    "test": "node scan.mjs --self-test && node app.mjs --self-test"
+  },
+  "dependencies": {
+    "puppeteer-core": "^24.31.0"
+  }
+}

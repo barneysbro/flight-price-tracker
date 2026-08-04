@@ -1,0 +1,6 @@
+project	from	to	days	destination	airlines
+EuropeFlights	2026-10-01	2026-10-31	8,9,10	CDG	CA+CZ+HU+MF+MU
+ThailandFlights	2026-10-01	2026-10-31	5,6	BKK	ALL
+ThailandFlights	2026-10-01	2026-10-31	5,6	DMK	ALL
+JapanFlights	2026-10-01	2026-10-31	5,6	NRT	ALL
+ThailandTripFlights	2026-10-01	2026-10-31	5,6	BKK	TRIP
