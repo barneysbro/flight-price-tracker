@@ -25,7 +25,7 @@ async function data() {
     readFile('no-flights.csv', 'utf8').catch(() => ''),
   ]);
   const unavailable = parseCsv(noFlights).map(x => ({ ...x, status: 'no flights' }));
-  const latest = new Map([...parseCsv(results).filter(x => !x.status.startsWith('error:')), ...unavailable].filter(x => ['8', '9', '10'].includes(x.days)).sort((a, b) => a.checked_at.localeCompare(b.checked_at)).map(x => [`${x.airline},${x.origin},${x.destination},${x.departure},${x.return},${x.days}`, x]));
+  const latest = new Map([...parseCsv(results).filter(x => !x.status.startsWith('error:') && !/^[A-Z]{3}$/.test(x.carrier)), ...unavailable].filter(x => ['8', '9', '10'].includes(x.days)).sort((a, b) => a.checked_at.localeCompare(b.checked_at)).map(x => [`${x.airline},${x.origin},${x.destination},${x.departure},${x.return},${x.days}`, x]));
   return {
     generatedAt: new Date().toISOString(),
     results: [...latest.values()].filter(x => x.status === 'ok' && x.carrier && !x.carrier.includes('中國東方航空') && x.airline.split('+').some(code => code !== 'MU')).map(x => {

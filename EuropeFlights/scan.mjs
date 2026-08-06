@@ -40,14 +40,16 @@ export function urlFor(departure, returning, origin = 'TPE', destination = 'MAD'
 function parseCard(text) {
   const lines = text.replaceAll('\u00a0', ' ').split('\n').map(s => s.trim()).filter(Boolean);
   const price = Number((text.match(/\$([\d,]+)\s*\n?來回票價/)?.[1] || '').replaceAll(',', ''));
+  const times = lines.filter(line => /^(?:凌晨|清晨|上午|中午|下午|傍晚|晚上|午夜)?\d{1,2}:\d{2}(?:\+\d+)?$/.test(line));
+  const airline = lines.find(line => !line.includes('機場') && /航空|Airlines?|Airways?/i.test(line)) || '';
   const duration = lines.find(line => /^\d+ 小時(?: \d+ 分鐘)?$/.test(line)) || '';
   const match = duration.match(/(\d+) 小時(?: (\d+) 分鐘)?/);
-  return { time: `${lines[0]} ${lines[1]} ${lines[2]}`, airline: lines[3], duration, minutes: match ? Number(match[1]) * 60 + Number(match[2] || 0) : 0, price };
+  return { time: times.length >= 2 ? `${times[0]} – ${times[1]}` : '', airline, duration, minutes: match ? Number(match[1]) * 60 + Number(match[2] || 0) : 0, price };
 }
 
 async function cards(page) {
   const texts = await page.$$eval('.yR1fYc', nodes => [...new Set(nodes.filter(n => n.offsetParent && n.innerText.includes('來回票價')).map(n => n.innerText))]);
-  return texts.map(parseCard).filter(x => x.price).sort((a, b) => a.price - b.price);
+  return texts.map(parseCard).filter(x => x.price && x.time && x.airline).sort((a, b) => a.price - b.price);
 }
 
 async function waitUntil(page, check, timeout = 60000) {
@@ -160,6 +162,7 @@ if (import.meta.url === pathToFileURL(process.argv[1]).href) {
     assert.match(decoded, /ROM.*CA.*ZH/s);
     assert.equal(decoded.match(/2\x02CA/g).length, 2);
     assert.deepEqual(parseCard('下午2:50\n–\n下午6:30+1\n中國南方航空\n33 小時 40 分鐘\n$65,230\n來回票價'), { time: '下午2:50 – 下午6:30+1', airline: '中國南方航空', duration: '33 小時 40 分鐘', minutes: 2020, price: 65230 });
+    assert.deepEqual(parseCard('下午2:50\nTPE\n清晨7:20+1\nCDG\n18 小時 30 分鐘\n中國國際航空\n$42,100\n來回票價'), { time: '下午2:50 – 清晨7:20+1', airline: '中國國際航空', duration: '18 小時 30 分鐘', minutes: 1110, price: 42100 });
     console.log('ok');
   } else {
     await main();
