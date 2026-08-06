@@ -70,6 +70,8 @@ const server = createServer(async (request, response) => {
     response.writeHead(200, { 'content-type': 'text/html; charset=utf-8' });
     return response.end(await readFile('public/index.html'));
   }
+  if (request.method === 'GET' && url.pathname === '/shared/flight-ui.css') { response.writeHead(200, { 'content-type': 'text/css; charset=utf-8' }); return response.end(await readFile('../public/shared/flight-ui.css')); }
+  if (request.method === 'GET' && url.pathname === '/shared/flight-ui.js') { response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' }); return response.end(await readFile('../public/shared/flight-ui.js')); }
   if (request.method === 'GET' && url.pathname === '/data/results.json') return json(response, await data());
   if (request.method === 'GET' && url.pathname === '/api/results') return json(response, await data());
   if (request.method === 'GET' && url.pathname === '/api/status') return json(response, { running: scanning, failed, log: log.slice(-4000) });
