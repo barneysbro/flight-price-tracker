@@ -87,6 +87,14 @@
     options.state.textContent = state.running ? '搜尋中…' : state.failed ? '搜尋失敗' : '搜尋完成';
     options.status.hidden = !state.running && !state.failed;
     options.status.textContent = state.log;
+    let progress = options.status.nextElementSibling;
+    if (!progress?.classList.contains('flight-progress')) {
+      options.status.insertAdjacentHTML('afterend', '<div class="flight-progress" hidden><progress max="100" aria-label="搜尋進度"></progress><strong></strong></div>');
+      progress = options.status.nextElementSibling;
+    }
+    progress.hidden = !state.running && !state.failed;
+    progress.querySelector('progress').value = state.progress;
+    progress.querySelector('strong').textContent = `${state.progress}%`;
     if (state.running) setTimeout(() => pollLocal(options), 1500);
     else { options.button.disabled = false; await options.onComplete?.(); }
   }

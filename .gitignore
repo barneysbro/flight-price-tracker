@@ -2,8 +2,12 @@
 node_modules/
 site/
 .update.lock
+.europe-update.lock/
+.europe-scan-progress
 **/.chrome-profile/
+**/.chrome-profile-headless/
 **/*.log
 **/*.pid
 **/results.csv
 **/no-flights.csv
+**/scan-failures.json

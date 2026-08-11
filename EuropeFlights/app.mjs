@@ -9,6 +9,7 @@ let scan;
 let scanning = false;
 let failed = false;
 let log = '';
+let total = 0;
 
 function parseCsv(text) {
   const lines = text.trim().split('\n');
@@ -20,19 +21,26 @@ function parseCsv(text) {
 }
 
 async function data() {
-  const [results, noFlights] = await Promise.all([
+  const [results, noFlights, failureText] = await Promise.all([
     readFile('results.csv', 'utf8').catch(() => ''),
     readFile('no-flights.csv', 'utf8').catch(() => ''),
+    readFile('scan-failures.json', 'utf8').catch(() => '{}'),
   ]);
   const unavailable = parseCsv(noFlights).map(x => ({ ...x, status: 'no flights' }));
+  let failures = {};
+  try { failures = JSON.parse(failureText); } catch {}
   const latest = new Map([...parseCsv(results).filter(x => !x.status.startsWith('error:') && !/^[A-Z]{3}$/.test(x.carrier)), ...unavailable].filter(x => ['8', '9', '10'].includes(x.days)).sort((a, b) => a.checked_at.localeCompare(b.checked_at)).map(x => [`${x.airline},${x.origin},${x.destination},${x.departure},${x.return},${x.days}`, x]));
+  const valid = [...latest.values()].filter(x => x.status === 'ok' && x.carrier && !x.carrier.includes('中國東方航空') && x.airline.split('+').some(code => code !== 'MU'));
+  const routeKey = x => `${x.origin},${x.destination},${x.departure},${x.return},${x.days}`;
+  const individuallyScanned = new Set(valid.filter(x => !x.airline.includes('+')).map(routeKey));
   return {
     generatedAt: new Date().toISOString(),
-    results: [...latest.values()].filter(x => x.status === 'ok' && x.carrier && !x.carrier.includes('中國東方航空') && x.airline.split('+').some(code => code !== 'MU')).map(x => {
+    results: valid.filter(x => !x.airline.includes('+') || !individuallyScanned.has(routeKey(x))).map(x => {
       const airline = x.airline.split('+').filter(code => code !== 'MU').join('+');
       return { ...x, airline, days: Number(x.days), total_minutes: Number(x.total_minutes), total_twd: Number(x.total_twd), url: urlFor(x.departure, x.return, x.origin, x.destination, airline) };
     }),
     noFlights: unavailable,
+    failures: Object.values(failures).filter(x => !x.airline.split('+').includes('MU')).sort((a, b) => a.checkedAt.localeCompare(b.checkedAt)),
   };
 }
 
@@ -47,19 +55,34 @@ function json(response, value, status = 200) {
   response.end(JSON.stringify(value));
 }
 
+async function runOne(from, to, days, destination, airline, force = false) {
+  await new Promise(resolve => {
+    scan = spawn(process.execPath, ['scan.mjs', from, to, days, destination, airline, ...(force ? ['--force', '--headless'] : [])]);
+    scan.stdout.on('data', chunk => log += chunk);
+    scan.stderr.on('data', chunk => log += chunk);
+    scan.on('error', error => { failed = true; log += `${error.message}\n`; });
+    scan.on('close', code => { if (code) failed = true; log += `${code ? '失敗' : '完成'} ${airline} (${code})\n`; resolve(); });
+  });
+  scan = undefined;
+}
+
 async function runScans({ from, to, days, destination, airlines }) {
   scanning = true;
   failed = false;
   log = '';
-  const airlineFilter = airlines.sort().join('+');
-  await new Promise(resolve => {
-    scan = spawn(process.execPath, ['scan.mjs', from, to, days.join(','), destination, airlineFilter]);
-    scan.stdout.on('data', chunk => log += chunk);
-    scan.stderr.on('data', chunk => log += chunk);
-    scan.on('error', error => { failed = true; log += `${error.message}\n`; });
-    scan.on('close', code => { if (code) failed = true; log += `${code ? '失敗' : '完成'} ${airlineFilter} (${code})\n`; resolve(); });
-  });
-  scan = undefined;
+  total = ((new Date(to) - new Date(from)) / 86400000 + 1) * days.length * airlines.length;
+  for (const airline of [...airlines].sort()) await runOne(from, to, days.join(','), destination, airline);
+  scanning = false;
+  if (!failed) await exportData();
+}
+
+async function retryFailures() {
+  scanning = true;
+  failed = false;
+  log = '';
+  const failures = (await data()).failures;
+  total = failures.length;
+  for (const item of failures) await runOne(item.departure, item.departure, String(item.days), item.destination, item.airline, true);
   scanning = false;
   if (!failed) await exportData();
 }
@@ -74,7 +97,14 @@ const server = createServer(async (request, response) => {
   if (request.method === 'GET' && url.pathname === '/shared/flight-ui.js') { response.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8' }); return response.end(await readFile('../public/shared/flight-ui.js')); }
   if (request.method === 'GET' && url.pathname === '/data/results.json') return json(response, await data());
   if (request.method === 'GET' && url.pathname === '/api/results') return json(response, await data());
-  if (request.method === 'GET' && url.pathname === '/api/status') return json(response, { running: scanning, failed, log: log.slice(-4000) });
+  if (request.method === 'GET' && url.pathname === '/api/status') return json(response, { running: scanning, failed, log: log.slice(-4000), progress: scanning ? Math.min(99, Math.round((log.match(/^查詢 /gm)?.length || 0) / total * 100)) : 100 });
+  if (request.method === 'POST' && url.pathname === '/api/retry-failures') {
+    if (scanning) return json(response, { error: '搜尋正在執行中' }, 409);
+    const count = (await data()).failures.length;
+    if (!count) return json(response, { started: false, count: 0 });
+    retryFailures();
+    return json(response, { started: true, count });
+  }
   if (request.method === 'POST' && url.pathname === '/api/scan') {
     if (scanning) return json(response, { error: '搜尋正在執行中' }, 409);
     let body = '';

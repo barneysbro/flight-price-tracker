@@ -1,11 +1,12 @@
 import assert from 'node:assert/strict';
-import { appendFile, readFile } from 'node:fs/promises';
+import { appendFile, readFile, writeFile } from 'node:fs/promises';
 import { pathToFileURL } from 'node:url';
 import puppeteer from 'puppeteer-core';
 
 const TEMPLATE = 'CBwQAhoiEgoyMDI2LTEwLTAxMgJDWmoHCAESA1RQRXIHCAESA01BRBoiEgoyMDI2LTEwLTA4MgJDWmoHCAESA01BRHIHCAESA1RQRUABQAFIAXABggELCP___________wGYAQE';
 const CSV = 'results.csv';
 const NO_FLIGHTS_CSV = 'no-flights.csv';
+const FAILURES_JSON = 'scan-failures.json';
 const sleep = ms => new Promise(resolve => setTimeout(resolve, ms));
 const iso = date => date.toISOString().slice(0, 10);
 const taipeiDay = value => {
@@ -15,12 +16,13 @@ const taipeiDay = value => {
 const csvValues = line => [...line.trimEnd().matchAll(/"((?:""|[^"])*)"(?:,|$)/g)].map(x => x[1].replaceAll('""', '"'));
 
 async function openBrowser() {
-  try {
-    return { browser: await puppeteer.connect({ browserURL: 'http://localhost:9222', defaultViewport: null }), launched: false };
-  } catch {
-    const executablePath = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
-    return { browser: await puppeteer.launch({ executablePath, headless: false, userDataDir: '.chrome-profile', args: ['--lang=zh-TW'] }), launched: true };
+  const headless = process.argv.includes('--headless');
+  if (!headless) {
+    try { return { browser: await puppeteer.connect({ browserURL: 'http://localhost:9222', defaultViewport: null }), launched: false }; }
+    catch {}
   }
+  const executablePath = process.env.CHROME_PATH || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+  return { browser: await puppeteer.launch({ executablePath, headless, userDataDir: headless ? '.chrome-profile-headless' : '.chrome-profile', args: ['--lang=zh-TW'] }), launched: true };
 }
 
 export function urlFor(departure, returning, origin = 'TPE', destination = 'MAD', airline = 'CZ') {
@@ -106,8 +108,10 @@ async function main() {
 
   let old = '';
   let noFlights = '';
+  let failures = {};
   try { old = await readFile(CSV, 'utf8'); } catch {}
   try { noFlights = await readFile(NO_FLIGHTS_CSV, 'utf8'); } catch {}
+  try { failures = JSON.parse(await readFile(FAILURES_JSON, 'utf8')); } catch {}
   if (!old) await appendFile(CSV, 'airline,origin,destination,departure,return,days,carrier,outbound_time,return_time,outbound_duration,return_duration,total_minutes,total_twd,status,checked_at\n');
   if (!noFlights) await appendFile(NO_FLIGHTS_CSV, 'airline,origin,destination,departure,return,days,checked_at\n');
   const today = taipeiDay(new Date());
@@ -133,6 +137,9 @@ async function main() {
         try { result = await query(page, departure, returning, origin, destination, airline); }
         catch (error) { result = { status: `error: ${error.message}` }; }
         const checkedAt = new Date().toISOString();
+        if (result.status.startsWith('error:') || result.status === 'no return flight') failures[key] = { airline, origin, destination, departure, return: returning, days, error: result.status, checkedAt };
+        else delete failures[key];
+        await writeFile(FAILURES_JSON, `${JSON.stringify(failures, null, 2)}\n`);
         if (result.status === 'no flights') {
           const row = [airline, origin, destination, departure, returning, days, checkedAt];
           await appendFile(NO_FLIGHTS_CSV, `${row.map(csv).join(',')}\n`);
