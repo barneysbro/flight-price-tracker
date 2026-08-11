@@ -33,8 +33,8 @@
 
   <section class="panel ranking-filters" aria-label="篩選與排名">
     <button id="quickMonths" class="quick-months" type="button">9–12 月</button>
-    <label>開始月份<input id="monthFrom" type="month"></label>
-    <label>結束月份<input id="monthTo" type="month"></label>
+    <label>開始月份<select id="monthFrom"></select></label>
+    <label>結束月份<select id="monthTo"></select></label>
     <label>國家<select id="country"><option value="">全部國家</option></select></label>
     <label>城市／機場<select id="destination"><option value="">全部城市／機場</option></select></label>
     <label>航空公司<select id="carrier"><option value="">全部航空公司</option></select></label>
@@ -86,7 +86,9 @@ function render(){
   document.querySelector('#monthBoard').innerHTML=months.map(key=>{const rows=shown.filter(x=>x.departure.startsWith(key)).sort(sort),visible=expanded.has(key)?rows:rows.slice(0,3),[year,month]=key.split('-');return `<section class="month-column"><div class="month-column-header"><strong>${Number(month)} 月</strong><span>${year} · ${rows.length} 筆</span></div>${visible.map(flightCard).join('')||'<div class="month-empty">這個月份沒有符合條件的航段</div>'}${rows.length>3?`<button class="month-more" type="button" data-month="${key}">${expanded.has(key)?'收合為前三名':`展開全部 ${rows.length} 筆`}</button>`:''}</section>`}).join('');
 }
 function updateCities(selected=''){const country=document.querySelector('#country').value,codes=[...new Set(all.filter(x=>!country||countryFor(x.destination)===country).map(x=>x.destination))].sort();const select=document.querySelector('#destination');select.innerHTML='<option value="">全部城市／機場</option>'+codes.map(x=>`<option value="${x}">${esc(names[x]||x)}（${x}）</option>`).join('');select.value=codes.includes(selected)?selected:''}
+function populateMonthFilters(){const from=document.querySelector('#monthFrom'),to=document.querySelector('#monthTo'),oldFrom=from.value,oldTo=to.value,years=[...new Set(all.map(x=>x.departure.slice(0,4)))],months=[...new Set([...all.map(x=>x.departure.slice(0,7)),...years.flatMap(year=>[9,10,11,12].map(month=>`${year}-${String(month).padStart(2,'0')}`))])].sort(),options=months.map(x=>{const [year,month]=x.split('-');return `<option value="${x}">${year}年${Number(month)}月</option>`}).join('');from.innerHTML=options;to.innerHTML=options;from.value=months.includes(oldFrom)?oldFrom:months[0]||'';to.value=months.includes(oldTo)?oldTo:months.at(-1)||''}
 function populateFilters(selectedDestination=''){
+  populateMonthFilters();
   const country=document.querySelector('#country'),carrier=document.querySelector('#carrier'),oldCountry=country.value,oldCarrier=carrier.value,countries=[...new Set(all.map(x=>countryFor(x.destination)).filter(Boolean))].sort((a,b)=>a.localeCompare(b,'zh-Hant')),carriers=Object.keys(carrierCodes).filter(name=>all.some(x=>x.carrier?.includes(name)));
   country.innerHTML='<option value="">全部國家</option>'+countries.map(x=>`<option>${esc(x)}</option>`).join('');country.value=countries.includes(oldCountry)?oldCountry:'';
   carrier.innerHTML='<option value="">全部航空公司</option>'+carriers.map(x=>`<option>${esc(x)}</option>`).join('');carrier.value=carriers.includes(oldCarrier)?oldCarrier:'';
