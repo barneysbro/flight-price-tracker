@@ -73,7 +73,7 @@ async function main() {
   try { old = await readFile(CSV, 'utf8'); } catch {}
   try { noFlights = await readFile(NO_FLIGHTS_CSV, 'utf8'); } catch {}
   const today = taipeiDay(new Date());
-  const keys = text => new Set(text.split('\n').slice(1).flatMap(line => {
+  const keys = text => new Set(text.split('\n').filter((line, index) => index || !line.startsWith('airline,')).flatMap(line => {
     const values = csvValues(line);
     return values.length && taipeiDay(values.at(-1)) === today ? [values.slice(0, 6).join(',')] : [];
   }));

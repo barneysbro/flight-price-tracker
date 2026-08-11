@@ -11,9 +11,14 @@ let failed = false;
 let log = '';
 let total = 0;
 
-function parseCsv(text) {
+const RESULT_HEADERS = ['airline', 'origin', 'destination', 'departure', 'return', 'days', 'carrier', 'outbound_time', 'return_time', 'outbound_duration', 'return_duration', 'total_minutes', 'total_twd', 'status', 'checked_at'];
+const NO_FLIGHTS_HEADERS = ['airline', 'origin', 'destination', 'departure', 'return', 'days', 'checked_at'];
+
+function parseCsv(text, fallbackHeaders) {
   const lines = text.trim().split('\n');
-  const headers = lines.shift()?.split(',') || [];
+  const first = lines[0]?.split(',') || [];
+  const hasHeader = first.length === fallbackHeaders.length && first.every((value, index) => value === fallbackHeaders[index]);
+  const headers = hasHeader ? lines.shift().split(',') : fallbackHeaders;
   return lines.map(line => {
     const values = [...line.matchAll(/"((?:""|[^"])*)"(?:,|$)/g)].map(x => x[1].replaceAll('""', '"'));
     return Object.fromEntries(headers.map((header, i) => [header, values[i] ?? '']));
@@ -25,8 +30,8 @@ async function data() {
     readFile('results.csv', 'utf8').catch(() => ''),
     readFile('no-flights.csv', 'utf8').catch(() => ''),
   ]);
-  const unavailable = parseCsv(noFlights).map(x => ({ ...x, status: 'no flights' }));
-  const latest = new Map([...parseCsv(results).filter(x => !x.status.startsWith('error:')), ...unavailable].filter(x => x.days).sort((a, b) => a.checked_at.localeCompare(b.checked_at)).map(x => [`${x.airline},${x.origin},${x.destination},${x.departure},${x.return},${x.days}`, x]));
+  const unavailable = parseCsv(noFlights, NO_FLIGHTS_HEADERS).map(x => ({ ...x, status: 'no flights' }));
+  const latest = new Map([...parseCsv(results, RESULT_HEADERS).filter(x => !x.status?.startsWith('error:')), ...unavailable].filter(x => x.days).sort((a, b) => a.checked_at.localeCompare(b.checked_at)).map(x => [`${x.airline},${x.origin},${x.destination},${x.departure},${x.return},${x.days}`, x]));
   return {
     generatedAt: new Date().toISOString(),
     results: [...latest.values()].filter(x => x.status === 'ok').map(x => ({ ...x, days: Number(x.days), total_minutes: Number(x.total_minutes), total_twd: Number(x.total_twd), url: urlFor(x.departure, x.return, x.origin, x.destination, x.airline) })),
@@ -92,7 +97,8 @@ const server = createServer(async (request, response) => {
 });
 
 if (process.argv[2] === '--self-test') {
-  assert.deepEqual(parseCsv('a,b\n"x","1"\n'), [{ a: 'x', b: '1' }]);
+  assert.deepEqual(parseCsv('a,b\n"x","1"\n', ['a', 'b']), [{ a: 'x', b: '1' }]);
+  assert.equal(parseCsv('"TRIP","TPE","BKK","2026-10-01","2026-10-05","5","星宇航空","13:55 – 16:40","return","3 小時 45 分","","225","15524","ok","2026-08-04T23:15:19.963Z"\n', RESULT_HEADERS)[0].status, 'ok');
   console.log('ok');
 } else if (process.argv[2] === '--export') {
   await exportData();

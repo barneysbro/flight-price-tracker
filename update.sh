@@ -2,8 +2,18 @@
 set -eu
 
 cd "$(dirname "$0")"
-mkdir .update.lock 2>/dev/null || { echo "Another update is running"; exit 1; }
-trap 'rmdir .update.lock' EXIT
+if ! mkdir .update.lock 2>/dev/null; then
+  lock_pid=$(cat .update.lock/pid 2>/dev/null || true)
+  if [ -n "$lock_pid" ] && kill -0 "$lock_pid" 2>/dev/null; then
+    echo "Another update is running (PID $lock_pid)"
+    exit 1
+  fi
+  rm -f .update.lock/pid
+  rmdir .update.lock
+  mkdir .update.lock
+fi
+echo $$ > .update.lock/pid
+trap 'rm -f .update.lock/pid; rmdir .update.lock' EXIT HUP INT TERM
 
 if [ "${1:-}" != "--publish-only" ]; then
   while IFS="	" read -r project from to days destination airlines; do
