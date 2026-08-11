@@ -36,7 +36,7 @@ while IFS="	" read -r destination airline_list; do
   fi
   printf '%s\n' "$destination" > "$state"
 done <<'ROUTES'
-MAD	CZ,CA,3U
+MAD	CZ
 FRA	CZ,CA
 BCN	CA,ZH
 BER	HU,MF
